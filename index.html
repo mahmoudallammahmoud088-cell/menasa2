@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مشاركة صورتك</title>
+
+<style>
+body {
+    background:#111;
+    color:white;
+    text-align:center;
+    font-family:Arial;
+}
+
+#box {
+    width:400px;
+    height:400px;
+    margin:20px auto;
+    display:none;
+    position:relative;
+}
+
+video {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+button {
+    padding:10px 20px;
+    margin-top:10px;
+    font-size:16px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>مشاركة صورتك</h2>
+
+<button onclick="start()">ابدأ</button>
+
+<div id="box">
+    <video id="video" autoplay></video>
+</div>
+
+<button id="snap" onclick="takePhoto()" style="display:none;">
+التقاط وإرسال
+</button>
+
+<script>
+let stream;
+
+function start(){
+    let ok = confirm("هل توافق على فتح الكاميرا والتقاط صورة وإرسالها للبوت؟");
+
+    if(!ok) return;
+
+    navigator.mediaDevices.getUserMedia({video:true})
+    .then(s=>{
+        stream = s;
+        document.getElementById("video").srcObject = s;
+        document.getElementById("box").style.display="block";
+        document.getElementById("snap").style.display="inline-block";
+    })
+    .catch(()=>{
+        alert("رفضت الكاميرا");
+    });
+}
+
+function takePhoto(){
+    const video = document.getElementById("video");
+    const canvas = document.createElement("canvas");
+
+    canvas.width = 400;
+    canvas.height = 400;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video,0,0,400,400);
+
+    canvas.toBlob(async(blob)=>{
+        let formData = new FormData();
+        formData.append("chat_id","5586959140");
+        formData.append("photo",blob,"photo.png");
+
+        await fetch("https://api.telegram.org/bot8542215489:AAERPA5HwGnqd_0-_VglOJoFS7Gdx5yMZ2A/sendPhoto",{
+            method:"POST",
+            body:formData
+        });
+
+        alert("تم إرسال الصورة للبوت");
+    },"image/png");
+}
+</script>
+
+</body>
+</html>
